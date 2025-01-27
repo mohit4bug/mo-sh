@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"html/template"
@@ -9,7 +10,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
+	"github.com/mohit4bug/mo-sh/rdb"
 )
+
+var ctx = context.Background()
 
 func CreateSource(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validate request body
@@ -90,12 +94,23 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	action := "https://github.com/settings/apps/new"
+	state := c.GenerateULID()
+	action := "https://github.com/settings/apps/new?state=" + state
+
+	rdb := rdb.GetRedisClient()
+
+	err = rdb.Set(ctx, state, sourceID, 0).Err()
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
 
 	manifest := c.JSON{
 		"name":         source.Name,
 		"url":          "https://example.com",
-		"redirect_url": "http://localhost:3000/webhooks/github/redirect?sourceID=" + sourceID,
+		"redirect_url": "http://localhost:3000/webhooks/github/redirect",
 	}
 
 	manifestJSON, err := json.Marshal(manifest)
