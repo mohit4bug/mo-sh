@@ -1,0 +1,21 @@
+{
+  "name": "js",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.30.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.4",
+    "postgres": "^3.4.5"
+  }
+}

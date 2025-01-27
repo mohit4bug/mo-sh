@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1737961850717,
+      "tag": "0000_freezing_piledriver",
+      "breakpoints": true
+    }
+  ]
+}
