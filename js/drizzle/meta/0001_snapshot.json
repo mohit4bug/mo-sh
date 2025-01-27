@@ -99,12 +99,8 @@
           "name": "github_apps_source_id_sources_id_fk",
           "tableFrom": "github_apps",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -152,9 +148,7 @@
     "public.source_type": {
       "name": "source_type",
       "schema": "public",
-      "values": [
-        "github"
-      ]
+      "values": ["github"]
     }
   },
   "schemas": {},
