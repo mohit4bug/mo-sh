@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
 )
@@ -63,6 +65,43 @@ func FindAllSources(w http.ResponseWriter, r *http.Request) {
 		"message": "OK",
 		"data": map[string]interface{}{
 			"sources": sources,
+		},
+	})
+}
+
+func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
+	sourceID := chi.URLParam(r, "sourceID")
+
+	db := db.GetDB()
+
+	var source Source
+	err := db.QueryRow("SELECT name FROM sources WHERE id = $1", sourceID).Scan(&source.Name)
+	if err == sql.ErrNoRows {
+		c.JSONResponse(w, http.StatusNotFound, c.JSON{
+			"message": "Not Found",
+		})
+		return
+	} else if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	action := "https://github.com/settings/apps/new"
+
+	manifest := c.JSON{
+		"name":         source.Name,
+		"url":          "https://example.com",
+		"redirect_url": "http://localhost:3000/webhooks/github/redirect?sourceID=" + sourceID,
+	}
+
+	// TODO: Render HTML
+	c.JSONResponse(w, http.StatusOK, c.JSON{
+		"message": "OK",
+		"data": map[string]interface{}{
+			"action":   action,
+			"manifest": manifest,
 		},
 	})
 }
