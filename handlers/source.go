@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -96,14 +98,31 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 		"redirect_url": "http://localhost:3000/webhooks/github/redirect?sourceID=" + sourceID,
 	}
 
-	// TODO: Render HTML
-	c.JSONResponse(w, http.StatusOK, c.JSON{
-		"message": "OK",
-		"data": map[string]interface{}{
-			"action":   action,
-			"manifest": manifest,
-		},
+	manifestJSON, err := json.Marshal(manifest)
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	tmpl, err := template.ParseFiles("templates/register_github_app.html")
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	err = tmpl.Execute(w, map[string]interface{}{
+		"Action":   action,
+		"Manifest": string(manifestJSON),
 	})
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+	}
 }
 
 type CreateSourceBody struct {
