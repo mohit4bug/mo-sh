@@ -11,6 +11,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Mount("/sources", routes.SourceRoutes())
+	r.Mount("/webhooks", routes.WebhookRoutes())
 
 	http.ListenAndServe(":3000", r)
 }
