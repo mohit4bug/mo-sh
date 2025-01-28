@@ -1,11 +1,22 @@
-import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp
+} from 'drizzle-orm/pg-core'
 
 export const sourceType = pgEnum('source_type', ['github'])
 
 export const sources = pgTable('sources', {
   id: text().primaryKey(),
   name: text().notNull(),
-  type: sourceType().notNull()
+  type: sourceType().notNull(),
+  createdAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
 })
 
 type Owner = {
@@ -55,4 +66,15 @@ export const githubApps = pgTable('github_apps', {
   clientSecret: text().notNull(),
   webhookSecret: text().notNull(),
   pem: text().notNull()
+})
+
+export const privateKeys = pgTable('private_keys', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  key: text().notNull(),
+  isExternal: boolean().notNull().default(true),
+  createdAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
 })

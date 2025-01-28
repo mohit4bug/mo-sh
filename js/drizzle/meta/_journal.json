@@ -22,6 +22,13 @@
       "when": 1738066057611,
       "tag": "0002_familiar_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1738072705770,
+      "tag": "0003_dark_zeigeist",
+      "breakpoints": true
     }
   ]
 }
