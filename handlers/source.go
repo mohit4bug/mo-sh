@@ -13,8 +13,6 @@ import (
 	"github.com/mohit4bug/mo-sh/rdb"
 )
 
-var ctx = context.Background()
-
 func CreateSource(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validate request body
 
@@ -98,6 +96,7 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 	action := "https://github.com/settings/apps/new?state=" + state
 
 	rdb := rdb.GetRedisClient()
+	ctx := context.Background()
 
 	err = rdb.Set(ctx, state, sourceID, 0).Err()
 	if err != nil {
