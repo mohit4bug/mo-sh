@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
+	"github.com/mohit4bug/mo-sh/models"
 	"github.com/mohit4bug/mo-sh/rdb"
 )
 
@@ -50,10 +51,10 @@ func FindAllSources(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var sources []Source
+	var sources []models.Source
 
 	for rows.Next() {
-		var source Source
+		var source models.Source
 
 		if err := rows.Scan(&source.ID, &source.Name, &source.Type); err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
@@ -78,7 +79,7 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 
 	db := db.GetDB()
 
-	var source Source
+	var source models.Source
 	err := db.QueryRow("SELECT name FROM sources WHERE id = $1", sourceID).Scan(&source.Name)
 	if err == sql.ErrNoRows {
 		c.JSONResponse(w, http.StatusNotFound, c.JSON{
@@ -140,12 +141,6 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateSourceBody struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
-type Source struct {
-	ID   string `json:"id"`
 	Name string `json:"name"`
 	Type string `json:"type"`
 }

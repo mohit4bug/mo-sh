@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
+	"github.com/mohit4bug/mo-sh/models"
 	"github.com/mohit4bug/mo-sh/rdb"
 	"github.com/redis/go-redis/v9"
 )
@@ -64,7 +64,7 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 
 	switch resp.StatusCode {
 	case http.StatusCreated:
-		var githubApp GithubApp
+		var githubApp models.GithubApp
 		if err := json.NewDecoder(resp.Body).Decode(&githubApp); err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 				"message": "Internal Server Error",
@@ -171,46 +171,4 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			"message": "Internal Server Error",
 		})
 	}
-}
-
-type Owner struct {
-	Login             string `json:"login"`
-	ID                int    `json:"id"`
-	NodeID            string `json:"node_id"`
-	AvatarURL         string `json:"avatar_url"`
-	GravatarID        string `json:"gravatar_id"`
-	URL               string `json:"url"`
-	HTMLURL           string `json:"html_url"`
-	FollowersURL      string `json:"followers_url"`
-	FollowingURL      string `json:"following_url"`
-	GistsURL          string `json:"gists_url"`
-	StarredURL        string `json:"starred_url"`
-	SubscriptionsURL  string `json:"subscriptions_url"`
-	OrganizationsURL  string `json:"organizations_url"`
-	ReposURL          string `json:"repos_url"`
-	EventsURL         string `json:"events_url"`
-	ReceivedEventsURL string `json:"received_events_url"`
-	Type              string `json:"type"`
-	SiteAdmin         bool   `json:"site_admin"`
-}
-
-type Permissions map[string]string
-
-type GithubApp struct {
-	ID            int64       `json:"id"`
-	Slug          string      `json:"slug"`
-	ClientID      string      `json:"client_id"`
-	NodeID        string      `json:"node_id"`
-	Owner         Owner       `json:"owner"`
-	Name          string      `json:"name"`
-	Description   string      `json:"description"`
-	ExternalURL   string      `json:"external_url"`
-	HTMLURL       string      `json:"html_url"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
-	Permissions   Permissions `json:"permissions"`
-	Events        []string    `json:"events"`
-	ClientSecret  string      `json:"client_secret"`
-	WebhookSecret string      `json:"webhook_secret"`
-	PEM           string      `json:"pem"`
 }
