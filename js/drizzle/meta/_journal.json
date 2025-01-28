@@ -15,6 +15,13 @@
       "when": 1737987829752,
       "tag": "0001_milky_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738066057611,
+      "tag": "0002_familiar_preak",
+      "breakpoints": true
     }
   ]
 }

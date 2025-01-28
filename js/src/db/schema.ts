@@ -51,5 +51,8 @@ export const githubApps = pgTable('github_apps', {
   events: jsonb().$type<Events>().notNull(),
   sourceId: text()
     .notNull()
-    .references(() => sources.id)
+    .references(() => sources.id),
+  clientSecret: text().notNull(),
+  webhookSecret: text().notNull(),
+  pem: text().notNull()
 })

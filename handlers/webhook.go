@@ -114,10 +114,13 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 				updated_at, 
 				permissions, 
 				events,
-				source_id
+				source_id,
+				client_secret,
+				webhook_secret,
+				pem
 			) 
 			VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 			)
 		`,
 			id,
@@ -134,6 +137,9 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			permissionsJSON,
 			eventsJSON,
 			sourceID,
+			githubApp.ClientSecret,
+			githubApp.WebhookSecret,
+			githubApp.PEM,
 		)
 		if err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
@@ -191,17 +197,20 @@ type Owner struct {
 type Permissions map[string]string
 
 type GithubApp struct {
-	ID          int64       `json:"id"`
-	Slug        string      `json:"slug"`
-	ClientID    string      `json:"client_id"`
-	NodeID      string      `json:"node_id"`
-	Owner       Owner       `json:"owner"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	ExternalURL string      `json:"external_url"`
-	HTMLURL     string      `json:"html_url"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-	Permissions Permissions `json:"permissions"`
-	Events      []string    `json:"events"`
+	ID            int64       `json:"id"`
+	Slug          string      `json:"slug"`
+	ClientID      string      `json:"client_id"`
+	NodeID        string      `json:"node_id"`
+	Owner         Owner       `json:"owner"`
+	Name          string      `json:"name"`
+	Description   string      `json:"description"`
+	ExternalURL   string      `json:"external_url"`
+	HTMLURL       string      `json:"html_url"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	Permissions   Permissions `json:"permissions"`
+	Events        []string    `json:"events"`
+	ClientSecret  string      `json:"client_secret"`
+	WebhookSecret string      `json:"webhook_secret"`
+	PEM           string      `json:"pem"`
 }
