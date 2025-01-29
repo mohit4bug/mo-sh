@@ -7,6 +7,6 @@ type PrivateKey struct {
 	Name       string     `json:"name"`
 	Key        *string    `json:"key,omitempty"`
 	IsExternal bool       `json:"isExternal"`
-	CreatedAt  *time.Time `json:"created_at,omitempty"`
-	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+	CreatedAt  *time.Time `json:"createdAt,omitempty"`
+	UpdatedAt  *time.Time `json:"updatedAt,omitempty"`
 }

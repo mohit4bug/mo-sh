@@ -2,44 +2,44 @@ package models
 
 import "time"
 
-type owner struct {
+type Owner struct {
 	Login             string `json:"login"`
 	ID                int    `json:"id"`
-	NodeID            string `json:"node_id"`
-	AvatarURL         string `json:"avatar_url"`
-	GravatarID        string `json:"gravatar_id"`
+	NodeID            string `json:"nodeId"`
+	AvatarURL         string `json:"avatarUrl"`
+	GravatarID        string `json:"gravatarId"`
 	URL               string `json:"url"`
-	HTMLURL           string `json:"html_url"`
-	FollowersURL      string `json:"followers_url"`
-	FollowingURL      string `json:"following_url"`
-	GistsURL          string `json:"gists_url"`
-	StarredURL        string `json:"starred_url"`
-	SubscriptionsURL  string `json:"subscriptions_url"`
-	OrganizationsURL  string `json:"organizations_url"`
-	ReposURL          string `json:"repos_url"`
-	EventsURL         string `json:"events_url"`
-	ReceivedEventsURL string `json:"received_events_url"`
+	HTMLURL           string `json:"htmlUrl"`
+	FollowersURL      string `json:"followersUrl"`
+	FollowingURL      string `json:"followingUrl"`
+	GistsURL          string `json:"gistsUrl"`
+	StarredURL        string `json:"starredUrl"`
+	SubscriptionsURL  string `json:"subscriptionsUrl"`
+	OrganizationsURL  string `json:"organizationsUrl"`
+	ReposURL          string `json:"reposUrl"`
+	EventsURL         string `json:"eventsUrl"`
+	ReceivedEventsURL string `json:"receivedEventsUrl"`
 	Type              string `json:"type"`
-	SiteAdmin         bool   `json:"site_admin"`
+	SiteAdmin         bool   `json:"siteAdmin"`
 }
 
-type permissions map[string]string
+type Permissions map[string]string
 
 type GithubApp struct {
 	ID            int64       `json:"id"`
 	Slug          string      `json:"slug"`
-	ClientID      string      `json:"client_id"`
-	NodeID        string      `json:"node_id"`
-	Owner         owner       `json:"owner"`
+	ClientID      string      `json:"clientId"`
+	NodeID        string      `json:"nodeId"`
+	Owner         Owner       `json:"owner"`
 	Name          string      `json:"name"`
 	Description   string      `json:"description"`
-	ExternalURL   string      `json:"external_url"`
-	HTMLURL       string      `json:"html_url"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
-	Permissions   permissions `json:"permissions"`
+	ExternalURL   string      `json:"externalUrl"`
+	HTMLURL       string      `json:"htmlUrl"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
+	Permissions   Permissions `json:"permissions"`
 	Events        []string    `json:"events"`
-	ClientSecret  string      `json:"client_secret"`
-	WebhookSecret string      `json:"webhook_secret"`
+	ClientSecret  string      `json:"clientSecret"`
+	WebhookSecret string      `json:"webhookSecret"`
 	PEM           string      `json:"pem"`
 }
