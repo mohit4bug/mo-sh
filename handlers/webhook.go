@@ -24,10 +24,10 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdbClient := rdb.GetRedisClient()
+	rdb := rdb.GetRedisClient()
 	ctx := context.Background()
 
-	sourceID, err := rdbClient.Get(ctx, state).Result()
+	sourceID, err := rdb.Get(ctx, state).Result()
 	if err == redis.Nil {
 		c.JSONResponse(w, http.StatusNotFound, c.JSON{
 			"message": "Source not found",
@@ -72,9 +72,6 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		dbClient := db.GetDB()
-		id := c.GenerateULID()
-
 		ownerJSON, err := json.Marshal(githubApp.Owner)
 		if err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
@@ -99,7 +96,27 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err = dbClient.Exec(`
+		db := db.GetDB()
+		tx, err := db.Begin()
+		if err != nil {
+			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+		defer tx.Rollback()
+
+		privateKeyId := c.GenerateULID()
+		_, err = tx.Exec(`INSERT INTO private_keys (id, name, key) VALUES ($1, $2, $3)`, privateKeyId, fmt.Sprintf("gh-%s", githubApp.Name), githubApp.PEM)
+		if err != nil {
+			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+
+		githubAppId := c.GenerateULID()
+		_, err = tx.Exec(`
 			INSERT INTO github_apps (
 				id, 
 				slug, 
@@ -117,13 +134,13 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 				source_id,
 				client_secret,
 				webhook_secret,
-				pem
+				private_key_id
 			) 
 			VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 			)
 		`,
-			id,
+			githubAppId,
 			githubApp.Slug,
 			githubApp.ClientID,
 			githubApp.NodeID,
@@ -139,7 +156,7 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			sourceID,
 			githubApp.ClientSecret,
 			githubApp.WebhookSecret,
-			githubApp.PEM,
+			privateKeyId,
 		)
 		if err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
@@ -149,10 +166,17 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if err := tx.Commit(); err != nil {
+			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+				"message": "Internal Server Error",
+			})
+			return
+		}
+
 		c.JSONResponse(w, http.StatusCreated, c.JSON{
 			"message": "OK",
 			"data": map[string]interface{}{
-				"id": id,
+				"id": privateKeyId,
 			},
 		})
 		return

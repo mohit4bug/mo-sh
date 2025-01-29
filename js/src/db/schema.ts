@@ -68,7 +68,9 @@ export const githubApps = pgTable('github_apps', {
     .references(() => sources.id),
   clientSecret: text().notNull(),
   webhookSecret: text().notNull(),
-  pem: text().notNull()
+  privateKeyId: text()
+    .notNull()
+    .references(() => privateKeys.id)
 })
 
 export const privateKeys = pgTable('private_keys', {

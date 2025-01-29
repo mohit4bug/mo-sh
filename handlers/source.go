@@ -18,12 +18,15 @@ func CreateSource(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validate request body
 
 	var body CreateSourceBody
-	c.JSONParseRequestBody(w, r, &body)
+	err := c.JSONParseRequestBody(w, r, &body)
+	if err != nil {
+		return
+	}
 
 	db := db.GetDB()
 	id := c.GenerateULID()
 
-	_, err := db.Exec("INSERT INTO sources (id, name, type) VALUES ($1, $2, $3)", id, body.Name, body.Type)
+	_, err = db.Exec("INSERT INTO sources (id, name, type) VALUES ($1, $2, $3)", id, body.Name, body.Type)
 	if err != nil {
 		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 			"message": "Internal Server Error",
