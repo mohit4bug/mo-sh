@@ -17,7 +17,9 @@ export const sources = pgTable('sources', {
   createdAt: timestamp({ mode: 'string', withTimezone: true })
     .notNull()
     .defaultNow(),
-  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
+  updatedAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow()
 })
 
 type Owner = {
@@ -77,7 +79,9 @@ export const privateKeys = pgTable('private_keys', {
   createdAt: timestamp({ mode: 'string', withTimezone: true })
     .notNull()
     .defaultNow(),
-  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
+  updatedAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow()
 })
 
 export const servers = pgTable('servers', {
@@ -91,5 +95,7 @@ export const servers = pgTable('servers', {
   createdAt: timestamp({ mode: 'string', withTimezone: true })
     .notNull()
     .defaultNow(),
-  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
+  updatedAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow()
 })
