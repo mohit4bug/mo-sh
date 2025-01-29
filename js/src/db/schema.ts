@@ -91,6 +91,7 @@ export const servers = pgTable('servers', {
   name: text().notNull(),
   hostname: text().notNull(),
   port: integer().notNull(),
+  isValidated: boolean().notNull().default(false),
   privateKeyId: text()
     .notNull()
     .references(() => privateKeys.id),
