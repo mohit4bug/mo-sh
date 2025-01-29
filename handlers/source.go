@@ -45,7 +45,7 @@ func CreateSource(w http.ResponseWriter, r *http.Request) {
 func FindAllSources(w http.ResponseWriter, r *http.Request) {
 	db := db.GetDB()
 
-	rows, err := db.Query("SELECT * FROM sources")
+	rows, err := db.Query("SELECT id, name, type FROM sources")
 	if err != nil {
 		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 			"message": "Internal Server Error",
