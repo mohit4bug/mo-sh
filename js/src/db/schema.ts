@@ -1,5 +1,6 @@
 import {
   boolean,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -73,6 +74,20 @@ export const privateKeys = pgTable('private_keys', {
   name: text().notNull(),
   key: text().notNull(),
   isExternal: boolean().notNull().default(true),
+  createdAt: timestamp({ mode: 'string', withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp({ mode: 'string', withTimezone: true }).notNull()
+})
+
+export const servers = pgTable('servers', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  hostname: text().notNull(),
+  port: integer().notNull(),
+  privateKeyId: text()
+    .notNull()
+    .references(() => privateKeys.id),
   createdAt: timestamp({ mode: 'string', withTimezone: true })
     .notNull()
     .defaultNow(),
