@@ -12,6 +12,7 @@ func main() {
 
 	r.Mount("/sources", routes.SourceRoutes())
 	r.Mount("/webhooks", routes.WebhookRoutes())
+	r.Mount("/servers", routes.ServerRoutes())
 
 	http.ListenAndServe(":3000", r)
 }
