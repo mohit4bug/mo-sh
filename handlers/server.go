@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
 	"github.com/mohit4bug/mo-sh/models"
+	"golang.org/x/crypto/ssh"
 )
 
 func CreateServer(w http.ResponseWriter, r *http.Request) {
@@ -77,14 +80,15 @@ func ValidateServer(w http.ResponseWriter, r *http.Request) {
 	serverID := chi.URLParam(r, "serverID")
 	db := db.GetDB()
 
-	var privateKey string
+	var hostname, privateKey string
+	var port int
 
 	err := db.QueryRow(`
-	    SELECT pk.key
+	    SELECT s.hostname, s.port, pk.key
 	    FROM servers AS s
 	    INNER JOIN private_keys AS pk ON s.private_key_id = pk.id
 	    WHERE s.id = $1
-	`, serverID).Scan(&privateKey)
+	`, serverID).Scan(&hostname, &port, &privateKey)
 	if err == sql.ErrNoRows {
 		c.JSONResponse(w, http.StatusNotFound, c.JSON{
 			"message": "Server not found",
@@ -97,11 +101,36 @@ func ValidateServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	signer, err := ssh.ParsePrivateKey([]byte(privateKey))
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // NOTE: Change this in production.
+		Timeout:         5 * time.Second,
+	}
+
+	address := fmt.Sprintf("%s:%d", hostname, port)
+	client, err := ssh.Dial("tcp", address, config)
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+			"error":   err.Error(),
+		})
+		return
+	}
+	defer client.Close()
+
 	c.JSONResponse(w, http.StatusOK, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
-			"privateKey": privateKey,
-		},
 	})
 }
 

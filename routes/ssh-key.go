@@ -9,6 +9,7 @@ func SSHKeyRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", handlers.FindAllSSHKeys)
+	r.Get("/{sshKeyID}", handlers.FindSSHKeyByID)
 	r.Post("/generate-key-pair", handlers.GenerateKeyPair)
 
 	return r
