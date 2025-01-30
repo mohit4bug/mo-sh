@@ -10,6 +10,8 @@ import {
 
 export const sourceType = pgEnum('source_type', ['github'])
 
+export const sshKeyType = pgEnum('ssh_key_type', ['ed25519', 'rsa'])
+
 export const sources = pgTable('sources', {
   id: text().primaryKey(),
   name: text().notNull(),
@@ -77,6 +79,7 @@ export const privateKeys = pgTable('private_keys', {
   id: text().primaryKey(),
   name: text().notNull(),
   key: text().notNull(),
+  type: sshKeyType().notNull(),
   isExternal: boolean().notNull().default(true),
   createdAt: timestamp({ mode: 'string', withTimezone: true })
     .notNull()

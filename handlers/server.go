@@ -123,6 +123,7 @@ func ValidateServer(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 			"message": "Internal Server Error",
+			"error":   err.Error(),
 		})
 		return
 	}

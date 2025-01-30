@@ -50,6 +50,13 @@
       "when": 1738146198009,
       "tag": "0006_oval_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1738220133193,
+      "tag": "0007_foamy_sugar_man",
+      "breakpoints": true
     }
   ]
 }

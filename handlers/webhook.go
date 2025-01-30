@@ -107,7 +107,7 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 		defer tx.Rollback()
 
 		privateKeyId := c.GenerateULID()
-		_, err = tx.Exec(`INSERT INTO private_keys (id, name, key) VALUES ($1, $2, $3)`, privateKeyId, fmt.Sprintf("gh-%s", githubApp.Name), githubApp.PEM)
+		_, err = tx.Exec(`INSERT INTO private_keys (id, name, key, type) VALUES ($1, $2, $3, $4)`, privateKeyId, fmt.Sprintf("gh-%s", githubApp.Name), githubApp.PEM, "rsa")
 		if err != nil {
 			c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 				"message": "Internal Server Error",
