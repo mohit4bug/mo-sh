@@ -36,7 +36,7 @@ func CreateSource(w http.ResponseWriter, r *http.Request) {
 
 	c.JSONResponse(w, http.StatusCreated, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
+		"data": c.JSON{
 			"id": id,
 		},
 	})
@@ -71,7 +71,7 @@ func FindAllSources(w http.ResponseWriter, r *http.Request) {
 
 	c.JSONResponse(w, http.StatusOK, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
+		"data": c.JSON{
 			"sources": sources,
 		},
 	})
@@ -132,7 +132,7 @@ func RegisterGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = tmpl.Execute(w, map[string]interface{}{
+	err = tmpl.Execute(w, c.JSON{
 		"Action":   action,
 		"Manifest": string(manifestJSON),
 	})

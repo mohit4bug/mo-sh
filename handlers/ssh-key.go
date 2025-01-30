@@ -43,7 +43,7 @@ func FindAllSSHKeys(w http.ResponseWriter, r *http.Request) {
 
 	c.JSONResponse(w, http.StatusOK, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
+		"data": c.JSON{
 			"privateKeys": privateKeys,
 		},
 	})
@@ -70,7 +70,6 @@ func FindSSHKeyByID(w http.ResponseWriter, r *http.Request) {
 		}
 		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
 			"message": "Internal Server Error",
-			"error":   err.Error(),
 		})
 		return
 	}

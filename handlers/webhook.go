@@ -175,7 +175,7 @@ func HandleGithubRedirect(w http.ResponseWriter, r *http.Request) {
 
 		c.JSONResponse(w, http.StatusCreated, c.JSON{
 			"message": "OK",
-			"data": map[string]interface{}{
+			"data": c.JSON{
 				"id": privateKeyId,
 			},
 		})

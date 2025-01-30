@@ -35,7 +35,7 @@ func CreateServer(w http.ResponseWriter, r *http.Request) {
 
 	c.JSONResponse(w, http.StatusCreated, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
+		"data": c.JSON{
 			"id": id,
 		},
 	})
@@ -70,7 +70,7 @@ func FindAllServers(w http.ResponseWriter, r *http.Request) {
 
 	c.JSONResponse(w, http.StatusOK, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
+		"data": c.JSON{
 			"servers": servers,
 		},
 	})
