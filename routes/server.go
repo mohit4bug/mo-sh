@@ -10,6 +10,7 @@ func ServerRoutes() chi.Router {
 
 	r.Post("/", handlers.CreateServer)
 	r.Get("/", handlers.FindAllServers)
+	r.Get("/{serverID}/validate", handlers.ValidateServer)
 
 	return r
 }

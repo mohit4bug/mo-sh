@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/mohit4bug/mo-sh/c"
 	"github.com/mohit4bug/mo-sh/db"
 	"github.com/mohit4bug/mo-sh/models"
@@ -67,6 +69,38 @@ func FindAllServers(w http.ResponseWriter, r *http.Request) {
 		"message": "OK",
 		"data": map[string]interface{}{
 			"servers": servers,
+		},
+	})
+}
+
+func ValidateServer(w http.ResponseWriter, r *http.Request) {
+	serverID := chi.URLParam(r, "serverID")
+	db := db.GetDB()
+
+	var privateKey string
+
+	err := db.QueryRow(`
+	    SELECT pk.key
+	    FROM servers AS s
+	    INNER JOIN private_keys AS pk ON s.private_key_id = pk.id
+	    WHERE s.id = $1
+	`, serverID).Scan(&privateKey)
+	if err == sql.ErrNoRows {
+		c.JSONResponse(w, http.StatusNotFound, c.JSON{
+			"message": "Server not found",
+		})
+		return
+	} else if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
+	c.JSONResponse(w, http.StatusOK, c.JSON{
+		"message": "OK",
+		"data": map[string]interface{}{
+			"privateKey": privateKey,
 		},
 	})
 }
