@@ -54,9 +54,14 @@ func FindSSHKeyByID(w http.ResponseWriter, r *http.Request) {
 	db := db.GetDB()
 	id := chi.URLParam(r, "sshKeyID")
 
-	var privateKey models.PrivateKey
+	type SSHKey struct {
+		models.PrivateKey
+		PublicKey string `json:"publicKey"`
+	}
 
-	err := db.QueryRow("SELECT id, name FROM private_keys WHERE id = $1", id).Scan(&privateKey.ID, &privateKey.Name)
+	var sshKey SSHKey
+
+	err := db.QueryRow("SELECT id, name, key FROM private_keys WHERE id = $1", id).Scan(&sshKey.ID, &sshKey.Name, &sshKey.Key)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSONResponse(w, http.StatusNotFound, c.JSON{
@@ -70,10 +75,18 @@ func FindSSHKeyByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sshKey.PublicKey, err = c.ExtractPublicKey(*sshKey.Key)
+	if err != nil {
+		c.JSONResponse(w, http.StatusInternalServerError, c.JSON{
+			"message": "Internal Server Error",
+		})
+		return
+	}
+
 	c.JSONResponse(w, http.StatusOK, c.JSON{
 		"message": "OK",
-		"data": map[string]interface{}{
-			"privateKey": privateKey,
+		"data": c.JSON{
+			"sshKey": sshKey,
 		},
 	})
 }
