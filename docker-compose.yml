@@ -1,0 +1,69 @@
+services:
+  postgres:
+    container_name: mo-sh-postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - mo_sh_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    container_name: mo-sh-redis-server
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - mo_sh_redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  rabbitmq:
+    container_name: mo-sh-rabbitmq
+    image: rabbitmq:3.11-management
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # UI
+    volumes:
+      - mo_sh_rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  ssh-server:
+    container_name: mo-sh-ssh-server
+    image: lscr.io/linuxserver/openssh-server:latest
+    environment:
+      PUID: 1000
+      PGID: 1000
+      PASSWORD_ACCESS: "true"
+      USER_NAME: root
+      USER_PASSWORD: password
+    ports:
+      - "2222:22"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  mo_sh_postgres_data:
+    driver: local
+  mo_sh_redis_data:
+    driver: local
+  mo_sh_rabbitmq_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
