@@ -5,14 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mohit4bug/mo-sh/internal/models"
+	"github.com/mohit4bug/mo-sh/pkg/ssh"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/crypto/ssh"
 )
 
 type ServerRepository interface {
@@ -127,72 +126,47 @@ func (r *serverRepository) QueueDockerInstall(c *gin.Context) {
 		return
 	}
 
-	signer, err := ssh.ParsePrivateKey([]byte(server.Key))
-	if err != nil {
+	sshClient := ssh.NewClient(server.Hostname, server.Port, "root", []byte(server.Key))
+	if err := sshClient.Connect(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	defer sshClient.Close()
+
+	if sshClient.CheckCommand("dockerr --version") {
+		c.JSON(http.StatusOK, gin.H{"message": "Docker already installed."})
+		return
+	}
+
+	taskID := uuid.New().String()
+
+	updateQuery := `
+		update servers
+		set docker_installation_task_id = :task_id
+		where id = :server_id
+	`
+
+	params := gin.H{
+		"task_id":   taskID,
+		"server_id": serverID,
+	}
+
+	if _, err := r.DB.NamedExecContext(*r.Ctx, updateQuery, params); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
 
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
+	task := fmt.Sprintf("%s:%s", serverID, taskID)
+
+	if err := r.RedisClient.LPush(*r.Ctx, "docker_installation_queue", task).Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Docker installation queued.",
+		"data": gin.H{
+			"taskId": taskID,
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
-	}
-
-	address := fmt.Sprintf("%s:%d", server.Hostname, server.Port)
-
-	conn, err := ssh.Dial("tcp", address, config)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-	defer session.Close()
-
-	cmd := "docker --version"
-	if err := session.Run(cmd); err != nil {
-		taskID := uuid.New().String()
-
-		updateQuery := `
-			update servers
-			set docker_installation_task_id = :task_id
-			where id = :server_id
-		`
-
-		params := gin.H{
-			"task_id":   taskID,
-			"server_id": serverID,
-		}
-
-		if _, err := r.DB.NamedExecContext(*r.Ctx, updateQuery, params); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-			return
-		}
-
-		task := fmt.Sprintf("%s:%s", serverID, taskID)
-
-		if err := r.RedisClient.LPush(*r.Ctx, "docker_installation_queue", task).Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Docker installation queued.",
-			"data": gin.H{
-				"taskId": taskID,
-			},
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Docker already installed."})
+	})
 }

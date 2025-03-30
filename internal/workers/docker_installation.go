@@ -1,19 +1,16 @@
 package workers
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
-	"fmt"
-	"io"
 	"strings"
-	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/mohit4bug/mo-sh/internal/models"
+	"github.com/mohit4bug/mo-sh/pkg/ssh"
 	"github.com/mohit4bug/mo-sh/pkg/ws"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/crypto/ssh"
 )
 
 type dockerInstallationWorker struct {
@@ -83,53 +80,13 @@ func (w *dockerInstallationWorker) installDocker(serverID string, taskID string)
 		return
 	}
 
-	signer, err := ssh.ParsePrivateKey([]byte(server.Key))
-	if err != nil {
+	sshClient := ssh.NewClient(server.Hostname, server.Port, "root", []byte(server.Key))
+	if err := sshClient.Connect(); err != nil {
 		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
 		w.SocketManager.RemoveClient(taskID)
 		return
 	}
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
-	}
-
-	address := fmt.Sprintf("%s:%d", server.Hostname, server.Port)
-
-	conn, err := ssh.Dial("tcp", address, config)
-	if err != nil {
-		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
-		w.SocketManager.RemoveClient(taskID)
-		return
-	}
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-	if err != nil {
-		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
-		w.SocketManager.RemoveClient(taskID)
-		return
-	}
-	defer session.Close()
-
-	stdout, err := session.StdoutPipe()
-	if err != nil {
-		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
-		w.SocketManager.RemoveClient(taskID)
-		return
-	}
-
-	stderr, err := session.StderrPipe()
-	if err != nil {
-		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
-		w.SocketManager.RemoveClient(taskID)
-		return
-	}
+	defer sshClient.Close()
 
 	cmd := `
 		for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
@@ -152,16 +109,33 @@ func (w *dockerInstallationWorker) installDocker(serverID string, taskID string)
 		sudo apt-get update
 		sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 	`
-	if err := session.Start(cmd); err != nil {
+
+	err := sshClient.ExecuteWithStreams(cmd,
+		func(text string) {
+			w.SocketManager.SendMessage(taskID, map[string]any{"message": text})
+		},
+		func(text string) {
+			w.SocketManager.SendMessage(taskID, map[string]any{"error": text})
+		},
+	)
+
+	if err != nil {
 		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
 		w.SocketManager.RemoveClient(taskID)
 		return
 	}
 
-	go w.streamLogs(taskID, stdout, "message")
-	go w.streamLogs(taskID, stderr, "error")
+	updateQuery := `
+		update servers
+		set docker_installation_task_id = null
+		where id = :server_id
+	`
 
-	if err := session.Wait(); err != nil {
+	params := gin.H{
+		"server_id": serverID,
+	}
+
+	if _, err := w.DB.NamedExecContext(*w.Ctx, updateQuery, params); err != nil {
 		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
 		w.SocketManager.RemoveClient(taskID)
 		return
@@ -169,16 +143,4 @@ func (w *dockerInstallationWorker) installDocker(serverID string, taskID string)
 
 	w.SocketManager.SendMessage(taskID, map[string]any{"message": "Installation completed successfully."})
 	w.SocketManager.RemoveClient(taskID)
-}
-
-func (w *dockerInstallationWorker) streamLogs(taskID string, reader io.Reader, eventType string) {
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		w.SocketManager.SendMessage(taskID, map[string]any{eventType: scanner.Text()})
-	}
-	if err := scanner.Err(); err != nil {
-		w.SocketManager.SendMessage(taskID, map[string]any{"error": "Internal Server Error"})
-		w.SocketManager.RemoveClient(taskID)
-		return
-	}
 }
