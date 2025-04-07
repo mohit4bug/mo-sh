@@ -1,0 +1,37 @@
+services:
+  postgres:
+    container_name: mo-sh-postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - mo_sh_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    container_name: mo-sh-redis-server
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - mo_sh_redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  mo_sh_postgres_data:
+    driver: local
+  mo_sh_redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
