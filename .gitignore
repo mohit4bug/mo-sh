@@ -1,0 +1,7 @@
+tmp/
+.env
+.DS_Store
+local/
+**/local/
+*.local.*
+**/*.local.*
