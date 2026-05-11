@@ -27,6 +27,9 @@ func main() {
 	caddyWorker := workers.NewCaddyInstallationWorker(db, redisClient, ctx)
 	caddyWorker.Start(cfg.WorkerCount)
 
+	databaseWorker := workers.NewDatabaseDeploymentWorker(db, redisClient, ctx)
+	databaseWorker.Start(cfg.WorkerCount)
+
 	r, err := api.NewRouter(db, redisClient, ctx, cfg)
 	if err != nil {
 		log.Fatal(err)

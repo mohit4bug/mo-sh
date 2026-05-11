@@ -139,6 +139,17 @@ func (r *serverRepository) QueueDockerInstall(c *gin.Context) {
 	defer sshClient.Close()
 
 	if sshClient.CheckCommand("docker --version") {
+		updateQuery := `
+			update servers
+			set
+				has_docker = true,
+				is_docker_installation_task_running = false
+			where id = :serverID
+		`
+		if _, err := r.DB.NamedExecContext(r.Ctx, updateQuery, map[string]any{"serverID": serverID}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "Docker is already installed."})
 		return
 	}

@@ -14,6 +14,7 @@ func NewRouter(db *sqlx.DB, redisClient *redis.Client, ctx context.Context, cfg 
 	userRepository := NewUserRepository(db, redisClient, ctx, cfg)
 	keyRepository := NewKeyRepository(db, redisClient, ctx)
 	serverRepository := NewServerRepository(db, redisClient, ctx)
+	databaseRepository := NewDatabaseRepository(db, redisClient, ctx)
 	sourceRepository := NewSourceRepository(db, redisClient, ctx, cfg)
 	webhookRepository := NewWebhookRepository(db, redisClient, ctx, cfg)
 
@@ -40,6 +41,11 @@ func NewRouter(db *sqlx.DB, redisClient *redis.Client, ctx context.Context, cfg 
 		v1.GET("/servers/:serverID/pending-logs", middlewares.Auth(redisClient, ctx), serverRepository.GetPendingLogs)
 		v1.GET("/servers/:serverID/queue-caddy-install", middlewares.Auth(redisClient, ctx), serverRepository.QueueCaddyInstall)
 		v1.GET("/servers/:serverID/caddy-pending-logs", middlewares.Auth(redisClient, ctx), serverRepository.GetCaddyPendingLogs)
+
+		v1.POST("/servers/:serverID/databases", middlewares.Auth(redisClient, ctx), databaseRepository.Create)
+		v1.GET("/servers/:serverID/databases", middlewares.Auth(redisClient, ctx), databaseRepository.FindByServer)
+		v1.GET("/databases/:databaseID", middlewares.Auth(redisClient, ctx), databaseRepository.FindByID)
+		v1.GET("/databases/:databaseID/pending-logs", middlewares.Auth(redisClient, ctx), databaseRepository.GetPendingLogs)
 
 		v1.POST("/sources", middlewares.Auth(redisClient, ctx), sourceRepository.Create)
 		v1.GET("/sources", middlewares.Auth(redisClient, ctx), sourceRepository.FindAll)

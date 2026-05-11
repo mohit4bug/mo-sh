@@ -6,6 +6,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
+        docker.io \
+        docker-compose-v2 \
         gnupg \
         openssh-server \
         sudo \
