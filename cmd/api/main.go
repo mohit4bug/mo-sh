@@ -24,6 +24,9 @@ func main() {
 	dockerWorker := workers.NewDockerInstallationWorker(db, redisClient, ctx)
 	dockerWorker.Start(cfg.WorkerCount)
 
+	caddyWorker := workers.NewCaddyInstallationWorker(db, redisClient, ctx)
+	caddyWorker.Start(cfg.WorkerCount)
+
 	r, err := api.NewRouter(db, redisClient, ctx, cfg)
 	if err != nil {
 		log.Fatal(err)

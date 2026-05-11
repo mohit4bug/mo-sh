@@ -21,6 +21,9 @@ type ServerRepository interface {
 	FindAll(c *gin.Context)
 	FindByID(c *gin.Context)
 	QueueDockerInstall(c *gin.Context)
+	GetPendingLogs(c *gin.Context)
+	QueueCaddyInstall(c *gin.Context)
+	GetCaddyPendingLogs(c *gin.Context)
 }
 
 type serverRepository struct {
@@ -225,6 +228,160 @@ func (r *serverRepository) GetPendingLogs(c *gin.Context) {
 				end
 			)
 			from jsonb_array_elements(docker_installation_logs) as elem
+		), '[]'::jsonb)
+		where id = $2
+	`
+
+	_, err = tx.ExecContext(r.Ctx, updateQuery, now, serverID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+		"data": gin.H{
+			"logs": logs,
+		},
+	})
+}
+
+func (r *serverRepository) QueueCaddyInstall(c *gin.Context) {
+	serverID := c.Param("serverID")
+
+	type ServerWithKey struct {
+		models.Server
+		Key string `db:"key"`
+	}
+
+	query := `
+		select
+			s.*, k.key
+		from
+			servers s
+		inner join
+			keys k ON s.key_id = k.id
+		where
+			s.id = $1
+	`
+
+	var server ServerWithKey
+	if err := r.DB.GetContext(r.Ctx, &server, query, serverID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": shared.ErrNotFound})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+
+	if server.IsCaddyInstallationTaskRunning {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Caddy installation already in progress. Please wait."})
+		return
+	}
+
+	sshClient := ssh.NewClient(server.Hostname, server.Port, "root", []byte(server.Key))
+	if err := sshClient.Connect(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrSSHConnection})
+		return
+	}
+	defer sshClient.Close()
+
+	if sshClient.CheckCommand("caddy version") {
+		c.JSON(http.StatusOK, gin.H{"message": "Caddy is already installed."})
+		return
+	}
+
+	updateQuery := `
+		update servers
+		set is_caddy_installation_task_running = :isCaddyInstallationTaskRunning
+		where id = :serverID
+	`
+
+	params := map[string]any{
+		"isCaddyInstallationTaskRunning": true,
+		"serverID":                       serverID,
+	}
+
+	if _, err := r.DB.NamedExecContext(r.Ctx, updateQuery, params); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+
+	if err := r.RedisClient.LPush(r.Ctx, workers.CaddyPendingQueue, serverID).Err(); err != nil {
+		_, _ = r.DB.NamedExecContext(r.Ctx, updateQuery, map[string]any{
+			"isCaddyInstallationTaskRunning": false,
+			"serverID":                       serverID,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Caddy installation queued."})
+}
+
+func (r *serverRepository) GetCaddyPendingLogs(c *gin.Context) {
+	serverID := c.Param("serverID")
+
+	tx, err := r.DB.BeginTx(r.Ctx, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var exists bool
+	if err = tx.QueryRowContext(r.Ctx, `select exists(select 1 from servers where id = $1)`, serverID).Scan(&exists); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+		return
+	}
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": shared.ErrNotFound})
+		return
+	}
+
+	var logs models.CaddyInstallationLogs
+	query := `
+		select
+			coalesce(jsonb_agg(logs), '[]'::jsonb) as unprocessed_logs
+		from (
+			select
+				jsonb_array_elements(coalesce(caddy_installation_logs, '[]'::jsonb)) as logs
+			from
+				servers
+			where
+				id = $1
+		) as logs
+		where
+			logs->>'processedAt' is null
+	`
+
+	if err = tx.QueryRowContext(r.Ctx, query, serverID).Scan(&logs); err != nil {
+		if err != sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": shared.ErrInternalServer})
+			return
+		}
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	updateQuery := `
+		update servers
+		set caddy_installation_logs = coalesce((
+			select jsonb_agg(
+				case
+					when elem->>'processedAt' is null 
+					then jsonb_set(elem, '{processedAt}', to_jsonb($1::text))
+					else elem
+				end
+			)
+			from jsonb_array_elements(caddy_installation_logs) as elem
 		), '[]'::jsonb)
 		where id = $2
 	`

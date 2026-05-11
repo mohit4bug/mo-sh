@@ -38,6 +38,8 @@ func NewRouter(db *sqlx.DB, redisClient *redis.Client, ctx context.Context, cfg 
 		v1.GET("/servers/:serverID", middlewares.Auth(redisClient, ctx), serverRepository.FindByID)
 		v1.GET("/servers/:serverID/queue-docker-install", middlewares.Auth(redisClient, ctx), serverRepository.QueueDockerInstall)
 		v1.GET("/servers/:serverID/pending-logs", middlewares.Auth(redisClient, ctx), serverRepository.GetPendingLogs)
+		v1.GET("/servers/:serverID/queue-caddy-install", middlewares.Auth(redisClient, ctx), serverRepository.QueueCaddyInstall)
+		v1.GET("/servers/:serverID/caddy-pending-logs", middlewares.Auth(redisClient, ctx), serverRepository.GetCaddyPendingLogs)
 
 		v1.POST("/sources", middlewares.Auth(redisClient, ctx), sourceRepository.Create)
 		v1.GET("/sources", middlewares.Auth(redisClient, ctx), sourceRepository.FindAll)

@@ -45,6 +45,36 @@ func (d DockerInstallationLogs) Value() (driver.Value, error) {
 	return nil, nil
 }
 
+type CaddyInstallationLog struct {
+	Type        LogType    `json:"type" db:"type"`
+	Content     string     `json:"content" db:"content"`
+	ProcessedAt *time.Time `json:"processedAt,omitempty" db:"processed_at"`
+	IsLast      *bool      `json:"isLast,omitempty" db:"is_last"`
+}
+
+type CaddyInstallationLogs []CaddyInstallationLog
+
+func (c *CaddyInstallationLogs) Scan(src any) error {
+	bytes, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", src)
+	}
+
+	var logs []CaddyInstallationLog
+	if err := json.Unmarshal(bytes, &logs); err != nil {
+		return fmt.Errorf("failed to unmarshal: %w", err)
+	}
+	*c = logs
+	return nil
+}
+
+func (c CaddyInstallationLogs) Value() (driver.Value, error) {
+	if c != nil {
+		return json.Marshal(c)
+	}
+	return nil, nil
+}
+
 type Server struct {
 	ID                              string                 `json:"id" db:"id"`
 	KeyID                           string                 `json:"keyId" db:"key_id"`
@@ -54,6 +84,9 @@ type Server struct {
 	HasDocker                       bool                   `json:"hasDocker" db:"has_docker"`
 	DockerInstallationLogs          DockerInstallationLogs `json:"dockerInstallationLogs" db:"docker_installation_logs"`
 	IsDockerInstallationTaskRunning bool                   `json:"isDockerInstallationTaskRunning" db:"is_docker_installation_task_running"`
+	HasCaddy                        bool                   `json:"hasCaddy" db:"has_caddy"`
+	CaddyInstallationLogs           CaddyInstallationLogs  `json:"caddyInstallationLogs" db:"caddy_installation_logs"`
+	IsCaddyInstallationTaskRunning  bool                   `json:"isCaddyInstallationTaskRunning" db:"is_caddy_installation_task_running"`
 	CreatedAt                       time.Time              `json:"createdAt" db:"created_at"`
 	UpdatedAt                       time.Time              `json:"updatedAt" db:"updated_at"`
 }
